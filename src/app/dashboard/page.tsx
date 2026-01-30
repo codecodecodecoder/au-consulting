@@ -43,34 +43,20 @@ export default function DashboardPage() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
     // State for data
-    const [portfolioData, setPortfolioData] = useState(initialPortfolioData);
-    const [inflowData, setInflowData] = useState(initialInflowData);
-    const [outflowData, setOutflowData] = useState(initialOutflowData);
-    const [lpData, setLpData] = useState(initialLpData);
+    const [portfolioData] = useState(initialPortfolioData);
+    const [inflowData] = useState(initialInflowData);
+    const [outflowData] = useState(initialOutflowData);
+    const [lpData] = useState(initialLpData);
 
+    // NOTE: Cloud Fetching removed to fix GitHub Pages build error. 
+    // GitHub Pages only supports static sites, not API routes.
+    // To restore dynamic data, we must use "Public CSV" fetching client-side.
+
+    /*
     const fetchData = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch('/au-consulting/api/dashboard-data'); // Adjust fetching path
-            const json = await res.json();
-            if (json.success && json.data) {
-                setPortfolioData(json.data.portfolioData.length ? json.data.portfolioData : initialPortfolioData);
-                setInflowData(json.data.inflowData.length ? json.data.inflowData : initialInflowData);
-                setOutflowData(json.data.outflowData.length ? json.data.outflowData : initialOutflowData);
-                setLpData(json.data.lpData.length ? json.data.lpData : initialLpData);
-                setLastUpdated(new Date());
-            }
-        } catch (e) {
-            console.error("Failed to fetch sheet data", e);
-        } finally {
-            setLoading(false);
-        }
+        // Client-side CSV fetching logic would go here
     };
-
-    useEffect(() => {
-        // Attempt fetch on mount
-        fetchData();
-    }, []);
+    */
 
     const filteredData = portfolioData.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,9 +118,6 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={fetchData} className="p-2 text-zinc-400 hover:text-[var(--primary)] transition-colors" title="Sync with Sheets">
-                            <RefreshCw size={20} className={clsx(loading && "animate-spin")} />
-                        </button>
                         {activeTab === "holdings" && (
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
