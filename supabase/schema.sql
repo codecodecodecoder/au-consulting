@@ -154,3 +154,45 @@ revoke all on function public.admin_set_access(uuid, text, text[]) from public, 
 grant execute on function public.admin_set_access(uuid, text, text[]) to authenticated;
 grant execute on function public.email_for_username(text) to anon, authenticated;
 grant execute on function public.is_admin() to authenticated;
+
+-- ── Admin account: username "admin123", password "admin123" ───────────────
+-- Created only if missing (re-running never resets a changed password).
+create extension if not exists pgcrypto with schema extensions;
+
+do $$
+declare
+    v_email text := 'admin123@investorportal.app';
+    v_id    uuid;
+begin
+    select id into v_id from auth.users where email = v_email;
+
+    if v_id is null then
+        v_id := gen_random_uuid();
+        insert into auth.users (
+            instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+            raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+            confirmation_token, recovery_token, email_change, email_change_token_new
+        ) values (
+            '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
+            v_email, extensions.crypt('admin123', extensions.gen_salt('bf')), now(),
+            '{"provider":"email","providers":["email"]}', '{"full_name":"Administrator"}', now(), now(),
+            '', '', '', ''
+        );
+        insert into auth.identities (
+            id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+        ) values (
+            gen_random_uuid(), v_id, v_id::text,
+            jsonb_build_object('sub', v_id::text, 'email', v_email, 'email_verified', true),
+            'email', now(), now(), now()
+        );
+    end if;
+
+    insert into public.profiles (id, email, full_name, username, status, is_admin, approved_at)
+    values (v_id, v_email, 'Administrator', 'admin123', 'approved', true, now())
+    on conflict (id) do update
+        set username = 'admin123', status = 'approved', is_admin = true;
+
+    insert into public.user_funds (user_id, fund_name)
+    values (v_id, 'AU Consulting'), (v_id, 'IR Capital')
+    on conflict do nothing;
+end $$;
