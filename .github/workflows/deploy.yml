@@ -53,10 +53,12 @@ jobs:
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Public values (they ship to every visitor's browser anyway)
+          NEXT_PUBLIC_SUPABASE_URL: https://thdsbmikyjiwspemktee.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_OReR6B5Z90C4UoCv0ABBCQ_qmnwzPRj
+          NEXT_PUBLIC_GOOGLE_SHEET_ID: 1CqHqQFcF0T_myPDan0rgdn_c89r5oKvYV_OJerWCiUI
+          # Kept as a repo secret so it isn't sitting in the public repo
           NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY }}
-          NEXT_PUBLIC_GOOGLE_SHEET_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_SHEET_ID }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
