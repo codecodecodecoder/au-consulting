@@ -53,8 +53,8 @@ function generatePassword(length = 12) {
 }
 
 async function fetchEmailsFromSheet(sheetName) {
-    // Emails are in Column F (rows 2+) — Column A = Entity Name, F = EMAIL header
-    const range = `'${sheetName}'!F2:F`;
+    // Find the "EMAIL" header column (F in IR Capital, G in AU Capital).
+    const range = `'${sheetName}'!A1:L`;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${GOOGLE_API_KEY}`;
 
     const res = await fetch(url);
@@ -64,11 +64,17 @@ async function fetchEmailsFromSheet(sheetName) {
     }
     const json = await res.json();
     const rows = json.values || [];
+    const headerIdx = rows.findIndex(r => r.some(c => String(c).trim().toLowerCase() === 'email'));
+    if (headerIdx < 0) {
+        console.warn(`  ⚠️  No EMAIL column found in "${sheetName}"`);
+        return [];
+    }
+    const col = rows[headerIdx].findIndex(c => String(c).trim().toLowerCase() === 'email');
 
     const emails = rows
-        .flat()
-        .map(v => String(v).trim().toLowerCase())
-        .filter(v => v.includes('@') && v !== 'email');
+        .slice(headerIdx + 1)
+        .map(r => String(r[col] || '').trim().toLowerCase())
+        .filter(v => v.includes('@'));
 
     console.log(`  📋  Found ${emails.length} emails in "${sheetName}"`);
     return emails;
@@ -92,7 +98,7 @@ async function main() {
 
     if (allEmails.size === 0) {
         console.error('\n❌ No emails found. Check your Google Sheet column F for LP emails.');
-        console.error('   Note: The script looks for email addresses (containing @) in column F.');
+        console.error('   Note: The script looks for the EMAIL header column in each tab.');
         process.exit(1);
     }
 

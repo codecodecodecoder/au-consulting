@@ -18,7 +18,7 @@ export async function fetchGoogleSheetsData(fundName: string = "IR Capital") {
             `'${sheetName}'!AA2:AJ`, // Index 0: Portfolio
             `'${sheetName}'!N2:U`,   // Index 1: Cashflow
             `'${sheetName}'!W2:Y`,   // Index 2: Summary
-            `'${sheetName}'!A2:J`    // Index 3: LPs
+            `'${sheetName}'!A1:L`    // Index 3: LPs (incl. header row)
         ];
 
         const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchGet?key=${API_KEY}&ranges=${ranges.map(r => encodeURIComponent(r)).join('&ranges=')}`;
@@ -102,36 +102,44 @@ export async function fetchGoogleSheetsData(fundName: string = "IR Capital") {
             return { label, value };
         }).filter((r: any) => r.label && r.label !== "Details");
 
-        // 4. LPs (A-J)
-        // Indices relative to A: 0(A)...9(J)
-        // Mapping: A(0)=Name, G(6)=Contrib, H(7)=Due, J(9)=Percent
-        const rawLpData = valueRanges[3]?.values || [];
-        const lpData = rawLpData.map((row: string[]) => {
-            const name = row[0];
-            const contribution = row[6] || "0";
-            const due = row[7] || "0";
+        // 4. LPs
+        // The tabs differ: IR Capital has "Entity name" in column A, while AU Capital
+        // has an extra reminder column first. So locate the header row and read
+        // every field relative to the "Entity name" column:
+        //   +0 name, +6 contribution (paid in), +7 due, +9 ownership % (IR only)
+        const rawLp: string[][] = valueRanges[3]?.values || [];
+        const norm = (v?: string) => (v || "").trim().toLowerCase();
+        const headerIdx = rawLp.findIndex((r) => r.some((c) => norm(c) === "entity name"));
+        const nameCol = headerIdx >= 0 ? rawLp[headerIdx].findIndex((c) => norm(c) === "entity name") : 0;
+        const toNum = (v?: string) => parseFloat((v || "0").replace(/[₹,\s]/g, "")) || 0;
 
-            // Percentage: Column J (row[9])
-            let percentStr = row[9] || "-";
-            if (!percentStr.includes('%') && percentStr !== "-") {
+        const lpRows = rawLp
+            .slice(headerIdx + 1)
+            .filter((row) => (row[nameCol] || "").trim() !== "");
+
+        const totalContribution = lpRows.reduce((sum, row) => sum + toNum(row[nameCol + 6]), 0);
+
+        const lpData = lpRows.map((row) => {
+            const contributionNum = toNum(row[nameCol + 6]);
+            const dueNum = toNum(row[nameCol + 7]);
+
+            let percentStr = (row[nameCol + 9] || "").trim();
+            if (percentStr && !percentStr.includes("%")) {
                 const pVal = parseFloat(percentStr);
-                if (!isNaN(pVal)) {
-                    if (pVal <= 1 && pVal > 0) percentStr = `${(pVal * 100).toFixed(2)}%`;
-                    else percentStr = `${pVal}%`;
-                }
+                percentStr = isNaN(pVal) ? "" : pVal <= 1 ? `${(pVal * 100).toFixed(2)}%` : `${pVal}%`;
+            }
+            if (!percentStr) {
+                percentStr = totalContribution > 0 ? `${((contributionNum / totalContribution) * 100).toFixed(2)}%` : "-";
             }
 
-            const dueAmount = parseFloat(due.replace(/,/g, ''));
-            const status = dueAmount > 0 ? "Call Pending" : "Active";
-
             return {
-                name,
-                contribution: `₹${contribution}`,
-                status,
+                name: row[nameCol].trim(),
+                contribution: `₹${contributionNum.toLocaleString("en-IN")}`,
+                status: dueNum > 0 ? "Call Pending" : "Active",
                 percent: percentStr,
-                due
+                due: `₹${dueNum.toLocaleString("en-IN")}`,
             };
-        }).filter((r: any) => r.name && r.name !== "Entity name");
+        });
 
         return {
             portfolioData,
