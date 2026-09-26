@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# sensitive credential files
+user-credentials.csv
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -39,3 +42,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local python env
+.venv/
+
+# Telegram agent (separate service, kept out of this public repo)
+/agent/

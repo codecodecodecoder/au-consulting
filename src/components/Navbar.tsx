@@ -12,10 +12,10 @@ export default function Navbar() {
         >
             <div className="container-custom h-20 flex justify-between items-center">
                 <Link href="/" className="text-2xl font-bold tracking-tighter text-[var(--primary)] uppercase">
-                    AU Consulting
+                    Investor Portal
                 </Link>
-                <Link href="/login" className="text-sm font-semibold tracking-wide uppercase text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors">
-                    Partner Login
+                <Link href="/" className="text-sm font-semibold tracking-wide uppercase text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors">
+                    Sign in
                 </Link>
             </div>
         </motion.nav>
