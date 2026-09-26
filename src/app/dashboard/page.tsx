@@ -71,7 +71,7 @@ export default function DashboardPage() {
             }
             setProfile(profile);
             setUserFunds(funds);
-            setSelected(funds.length > 1 ? COMBINED : funds[0] ?? "");
+            setSelected(funds[0] ?? "");
         })();
     }, [router]);
 
@@ -280,7 +280,6 @@ function FundSelector({ funds, value, onChange }: { funds: string[]; value: stri
                 aria-label="Select fund"
                 className="w-full appearance-none bg-[#0B254A] border border-blue-800/50 hover:border-blue-500/50 text-blue-100 text-sm font-medium py-3 pl-10 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
             >
-                <option value={COMBINED}>All funds (combined)</option>
                 {funds.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300/70 pointer-events-none" size={16} />
